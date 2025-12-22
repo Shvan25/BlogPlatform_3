@@ -1,0 +1,108 @@
+﻿@model BlogPlatform.Data.Models.Role
+@{
+    ViewData["Title"] = "Удаление роли";
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Удаление роли</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5><i class="bi bi-exclamation-triangle"></i> Внимание!</h5>
+                        <p>Вы собираетесь удалить роль. Это действие нельзя отменить.</p>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">@Model.Name</h5>
+                            <p class="card-text">@Model.Description</p>
+                            <p class="text-muted">
+                                Создано: @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                            </p>
+                        </div>
+                    </div>
+
+                    <form id="deleteForm">
+                        <input type="hidden" id="roleId" value="@Model.Id">
+
+                        <div class="mb-3">
+                            <label for="confirmText" class="form-label">
+                                Для подтверждения введите "УДАЛИТЬ":
+                            </label>
+                            <input type="text" class="form-control" id="confirmText" required>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                                <i class="bi bi-trash"></i> Удалить роль
+                            </button>
+                            <a href="/Role/Details/@Model.Id" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+
+                    <div id="message" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('confirmText').addEventListener('input', function(e) {
+            const deleteBtn = document.getElementById('deleteBtn');
+            deleteBtn.disabled = e.target.value !== 'УДАЛИТЬ';
+        });
+
+        document.getElementById('deleteForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const roleId = document.getElementById('roleId').value;
+
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = '<div class="alert alert-info">Удаление роли...</div>';
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/role/${roleId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            Роль успешно удалена!
+                        </div>
+                    `;
+
+                    setTimeout(() => {
+                        window.location.href = '/Role';
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            Ошибка: ${error.message || 'Не удалось удалить роль'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        Ошибка сети: ${error.message}
+                    </div>
+                `;
+            }
+        });
+    </script>
+}

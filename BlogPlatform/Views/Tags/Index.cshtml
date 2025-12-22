@@ -1,0 +1,92 @@
+﻿@model List<BlogPlatform.Data.DTOs.TagDTO>
+@{
+    ViewData["Title"] = "Теги";
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-tags"></i> Теги</h1>
+
+        @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Moderator")))
+        {
+            <a href="/Tags/Create" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Добавить тег
+            </a>
+        }
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="row">
+            @foreach (var tag in Model)
+            {
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <span class="badge bg-primary fs-5">@tag.Name</span>
+                            </h5>
+
+                            @if (!string.IsNullOrEmpty(tag.Description))
+                            {
+                                <p class="card-text mt-2">@tag.Description</p>
+                            }
+
+                            <p class="text-muted small mt-3">
+                                <i class="bi bi-calendar"></i> Создан: @tag.CreatedAt.ToString("dd.MM.yyyy")
+                            </p>
+
+                            <div class="btn-group w-100">
+                                <a href="/Tags/Details/@tag.Id" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+
+                                @if (User.IsInRole("Admin") || User.IsInRole("Moderator"))
+                                {
+                                    <a href="/Tags/Edit/@tag.Id" class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                }
+
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <a href="/Tags/Delete/@tag.Id" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Теги не найдены.
+            @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Moderator")))
+            {
+                <a href="/Tags/Create" class="alert-link">Добавьте первый тег</a>
+            }
+        </div>
+    }
+</div>
+
+<script>
+    // Проверка авторизации и ролей
+    document.addEventListener('DOMContentLoaded', function() {
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (token && user.roles) {
+            console.log('Текущий пользователь:', user.username, 'Роли:', user.roles);
+
+            // Если пользователь админ или модератор, показываем дополнительные кнопки
+            if (user.roles.includes('Admin') || user.roles.includes('Moderator')) {
+                console.log('Пользователь имеет права на управление тегами');
+            }
+        }
+    });
+</script>

@@ -1,0 +1,156 @@
+﻿@model BlogPlatform.Data.DTOs.TagDTO
+@{
+    ViewData["Title"] = "Удаление тега";
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Удаление тега</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5><i class="bi bi-exclamation-triangle"></i> Внимание!</h5>
+                        <p>Вы собираетесь удалить тег "<strong>@Model.Name</strong>".</p>
+                        <p class="mb-0">Это действие нельзя отменить. Все связи с статьями будут удалены.</p>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <span class="badge bg-primary">@Model.Name</span>
+                            </h5>
+                            @if (!string.IsNullOrEmpty(Model.Description))
+                            {
+                                <p class="card-text mt-2">@Model.Description</p>
+                            }
+                            <p class="text-muted">
+                                <i class="bi bi-calendar"></i> Создан: @Model.CreatedAt.ToString("dd.MM.yyyy")
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="articlesWarning" class="alert alert-warning" style="display: none;">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Этот тег используется в <span id="articlesCount">0</span> статьях!
+                    </div>
+
+                    <form id="deleteForm">
+                        <input type="hidden" id="tagId" value="@Model.Id">
+
+                        <div class="mb-3">
+                            <label for="confirmText" class="form-label">
+                                Для подтверждения введите "УДАЛИТЬ ТЕГ":
+                            </label>
+                            <input type="text" class="form-control" id="confirmText" required>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                                <i class="bi bi-trash"></i> Удалить тег
+                            </button>
+                            <a href="/Tags/Details/@Model.Id" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+
+                    <div id="message" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Загрузка информации о статьях с этим тегом
+        async function loadArticlesInfo() {
+            try {
+                const response = await fetch(`/api/tags/${@Model.Id}/articles`);
+                if (response.ok) {
+                    const articles = await response.json();
+                    if (articles.length > 0) {
+                        document.getElementById('articlesCount').textContent = articles.length;
+                        document.getElementById('articlesWarning').style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading articles info:', error);
+            }
+        }
+
+        // Проверка подтверждения
+        document.getElementById('confirmText').addEventListener('input', function(e) {
+            const deleteBtn = document.getElementById('deleteBtn');
+            deleteBtn.disabled = e.target.value !== 'УДАЛИТЬ ТЕГ';
+        });
+
+        // Удаление тега
+        document.getElementById('deleteForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Проверка прав пользователя
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (!user.roles || !user.roles.includes('Admin')) {
+                alert('Только администраторы могут удалять теги');
+                return;
+            }
+
+            const tagId = document.getElementById('tagId').value;
+
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = '<div class="alert alert-info">Удаление тега...</div>';
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/tags/${tagId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            Тег успешно удален!
+                        </div>
+                    `;
+
+                    setTimeout(() => {
+                        window.location.href = '/Tags';
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            Ошибка: ${error.message || 'Не удалось удалить тег'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        Ошибка сети: ${error.message}
+                    </div>
+                `;
+            }
+        });
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            loadArticlesInfo();
+
+            // Проверка прав
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (!user.roles || !user.roles.includes('Admin')) {
+                alert('У вас нет прав для удаления тегов');
+                window.location.href = '/Tags/Details/@Model.Id';
+            }
+        });
+    </script>
+}

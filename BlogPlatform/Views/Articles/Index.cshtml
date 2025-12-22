@@ -1,0 +1,124 @@
+﻿@* Views/Articles/Index.cshtml *@
+@model List<BlogPlatform.Data.DTOs.ArticleDTO>
+@{
+    ViewData["Title"] = "Статьи";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-newspaper"></i> Статьи
+            <span class="badge bg-secondary">@Model.Count</span>
+        </h1>
+
+        @if (User.Identity.IsAuthenticated)
+        {
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Новая статья
+            </a>
+        }
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="row">
+            @foreach (var article in Model)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        @if (!string.IsNullOrEmpty(article.CoverImageUrl))
+                        {
+                            <img src="@article.CoverImageUrl" class="card-img-top" alt="@article.Title" style="height: 200px; object-fit: cover;">
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a asp-action="Details" asp-route-id="@article.Id" class="text-decoration-none">
+                                    @article.Title
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted">
+                                @if (!string.IsNullOrEmpty(article.Excerpt))
+                                {
+                                    @article.Excerpt
+                                }
+                                else
+                                {
+                                    @(article.Content.Length > 100 ? article.Content.Substring(0, 100) + "..." : article.Content)
+                                }
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">
+                                        <i class="fas fa-user"></i> @article.AuthorName
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar"></i> @article.CreatedAt.ToString("dd.MM.yyyy")
+                                    </small>
+                                </div>
+
+                                <div>
+                                    @if (User.Identity.IsAuthenticated)
+                                    {
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-action="Details" asp-route-id="@article.Id" class="btn btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+
+                                            @* Редактирование - только автор или админ/модератор *@
+                                            @if (User.Identity.Name == article.AuthorName || User.IsInRole("Admin") || User.IsInRole("Moderator"))
+                                            {
+                                                <a asp-action="Edit" asp-route-id="@article.Id" class="btn btn-outline-warning">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            }
+
+                                            @* Удаление - только автор или админ *@
+                                            @if (User.Identity.Name == article.AuthorName || User.IsInRole("Admin"))
+                                            {
+                                                <a asp-action="Delete" asp-route-id="@article.Id" class="btn btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="Details" asp-route-id="@article.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> Читать
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+
+                            @* Теги *@
+                            @if (article.Tags != null && article.Tags.Any())
+                            {
+                                <div class="mt-2">
+                                    @foreach (var tag in article.Tags)
+                                    {
+                                        <a href="/Tags/Details/@tag.Id" class="badge bg-info me-1 text-decoration-none">
+                                            @tag.Name
+                                        </a>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> Статей пока нет.
+            @if (User.Identity.IsAuthenticated)
+            {
+                <a asp-action="Create" class="alert-link">Создайте первую статью!</a>
+            }
+        </div>
+    }
+</div>

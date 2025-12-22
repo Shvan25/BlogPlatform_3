@@ -1,0 +1,122 @@
+﻿@model BlogPlatform.Data.Models.Role
+@{
+    ViewData["Title"] = "Роль: " + Model.Name;
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Роль: @Model.Name</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Описание:</h5>
+                    <p class="lead">@Model.Description</p>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <p><strong>ID:</strong> @Model.Id</p>
+                            <p><strong>Название:</strong> @Model.Name</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Создано:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                            <p>
+                                <strong>Тип:</strong>
+                                @if (new[] { "Admin", "Moderator", "User" }.Contains(Model.Name))
+                                {
+                                    <span class="badge bg-info">Стандартная роль</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Пользовательская роль</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="/Role" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> К списку ролей
+                        </a>
+                        @if (User.IsInRole("Admin") && !new[] { "Admin", "Moderator", "User" }.Contains(Model.Name))
+                        {
+                            <a href="/Role/Edit/@Model.Id" class="btn btn-warning">
+                                <i class="bi bi-pencil"></i> Редактировать
+                            </a>
+                            <a href="/Role/Delete/@Model.Id" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Удалить
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Действия</h5>
+                </div>
+                <div class="card-body">
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <button class="btn btn-outline-primary w-100 mb-2" onclick="assignRoleToUser(@Model.Id)">
+                            <i class="bi bi-person-plus"></i> Назначить пользователю
+                        </button>
+                    }
+                    <button class="btn btn-outline-info w-100" onclick="showUsersWithRole(@Model.Id)">
+                        <i class="bi bi-people"></i> Показать пользователей
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function assignRoleToUser(roleId) {
+            const userId = prompt("Введите ID пользователя:");
+            if (userId) {
+                fetch('/api/role/assign', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        userId: parseInt(userId),
+                        roleId: roleId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message || 'Роль назначена');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ошибка при назначении роли');
+                });
+            }
+        }
+
+        function showUsersWithRole(roleId) {
+            fetch(`/api/role/user/${roleId}`)
+                .then(response => response.json())
+                .then(users => {
+                    if (users.length > 0) {
+                        const userList = users.map(u => `- ${u.username} (ID: ${u.id})`).join('\n');
+                        alert(`Пользователи с этой ролью:\n\n${userList}`);
+                    } else {
+                        alert('Нет пользователей с этой ролью');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ошибка при получении данных');
+                });
+        }
+    </script>
+}

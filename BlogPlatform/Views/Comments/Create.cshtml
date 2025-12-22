@@ -1,0 +1,112 @@
+﻿@{
+    ViewData["Title"] = "Добавление комментария";
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-chat-left-text"></i> Новый комментарий</h4>
+                </div>
+                <div class="card-body">
+                    <form id="createCommentForm">
+                        <div class="mb-3">
+                            <label for="articleId" class="form-label">ID статьи *</label>
+                            <input type="number" class="form-control" id="articleId" required
+                                   placeholder="Введите ID статьи">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Комментарий *</label>
+                            <textarea class="form-control" id="content" rows="5" required
+                                      placeholder="Введите текст комментария"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="parentId" class="form-label">Ответ на комментарий (необязательно)</label>
+                            <input type="number" class="form-control" id="parentId"
+                                   placeholder="Введите ID родительского комментария">
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Отправить комментарий
+                            </button>
+                            <a href="/Comments" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> К списку комментариев
+                            </a>
+                        </div>
+                    </form>
+
+                    <div id="message" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('createCommentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const articleId = parseInt(document.getElementById('articleId').value);
+            const content = document.getElementById('content').value;
+            const parentId = document.getElementById('parentId').value
+                ? parseInt(document.getElementById('parentId').value)
+                : null;
+
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = '<div class="alert alert-info">Отправка комментария...</div>';
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/comments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        content: content,
+                        articleId: articleId,
+                        userId: user.id || 1,
+                        parentId: parentId
+                    })
+                });
+
+                if (response.ok) {
+                    const comment = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            Комментарий успешно добавлен!
+                        </div>
+                    `;
+
+                    document.getElementById('createCommentForm').reset();
+
+                    setTimeout(() => {
+                        window.location.href = '/Comments/Details/' + comment.id;
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            Ошибка: ${error.message || 'Не удалось добавить комментарий'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        Ошибка сети: ${error.message}
+                    </div>
+                `;
+            }
+        });
+    </script>
+}

@@ -1,0 +1,50 @@
+﻿@model BlogPlatform.Data.DTOs.UserDTO
+@{
+    ViewData["Title"] = "Пользователь: " + Model.Username;
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">Пользователь: @Model.Username</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>ID:</strong> @Model.Id</p>
+                    <p><strong>Email:</strong> @Model.Email</p>
+                    <p><strong>Полное имя:</strong> @Model.FullName</p>
+                </div>
+                <div class="col-md-6">
+                    <p>
+                        <strong>Роли:</strong>
+                        @foreach (var role in Model.Roles)
+                        {
+                            <span class="badge bg-primary me-1">@role</span>
+                        }
+                    </p>
+                    <p>
+                        <strong>Статус:</strong>
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge bg-success">Активен</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Неактивен</span>
+                        }
+                    </p>
+                    <p><strong>Дата регистрации:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                </div>
+            </div>
+            <div class="mt-3">
+                <a href="/Users" class="btn btn-secondary">Назад к списку</a>
+                @if (User.IsInRole("Admin"))
+                {
+                    <a href="/Users/Edit/@Model.Id" class="btn btn-warning">Редактировать</a>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,70 @@
+﻿@model BlogPlatform.Data.DTOs.CommentDTO
+@{
+    ViewData["Title"] = "Комментарий";
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Комментарий #@Model.Id</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <p class="lead">@Model.Content</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>ID:</strong> @Model.Id</p>
+                            <p>
+                                <strong>Статья:</strong>
+                                <a href="/Articles/Details/@Model.ArticleId">@Model.ArticleTitle</a>
+                            </p>
+                            <p><strong>Автор:</strong> @Model.UserName</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p>
+                                <strong>Статус:</strong>
+                                @if (Model.IsApproved)
+                                {
+                                    <span class="badge bg-success">Одобрен</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning">На модерации</span>
+                                }
+                            </p>
+                            <p><strong>Создан:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                            <p><strong>Обновлен:</strong> @Model.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                            @if (Model.ParentId.HasValue)
+                            {
+                                <p>
+                                    <strong>Ответ на:</strong>
+                                    <a href="/Comments/Details/@Model.ParentId">Комментарий #@Model.ParentId</a>
+                                </p>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="/Comments" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> К списку комментариев
+                        </a>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <a href="/Comments/Edit/@Model.Id" class="btn btn-warning">
+                                <i class="bi bi-pencil"></i> Редактировать
+                            </a>
+                            <a href="/Comments/Delete/@Model.Id" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Удалить
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

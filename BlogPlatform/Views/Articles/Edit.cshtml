@@ -1,0 +1,142 @@
+﻿@model BlogPlatform.Data.DTOs.ArticleDTO
+@{
+    ViewData["Title"] = "Редактирование статьи";
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0"><i class="bi bi-pencil"></i> Редактирование статьи</h4>
+                </div>
+                <div class="card-body">
+                    <form id="editArticleForm">
+                        <input type="hidden" id="articleId" value="@Model.Id">
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Заголовок *</label>
+                            <input type="text" class="form-control" id="title"
+                                   value="@Model.Title" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="excerpt" class="form-label">Краткое содержание</label>
+                            <textarea class="form-control" id="excerpt" rows="3">@Model.Excerpt</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Содержание *</label>
+                            <textarea class="form-control" id="content" rows="10" required>@Model.Content</textarea>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="isPublished"
+                                   @(Model.IsPublished ? "checked" : "")>
+                            <label class="form-check-label" for="isPublished">
+                                Опубликовано
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-check-circle"></i> Сохранить изменения
+                            </button>
+                            <a href="/Articles/Details/@Model.Id" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+
+                    <div id="message" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Информация о статье</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID:</strong> @Model.Id</p>
+                    <p><strong>Автор:</strong> @Model.AuthorName</p>
+                    <p><strong>Создано:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                    <p><strong>Обновлено:</strong> @Model.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                    <p><strong>Просмотров:</strong> @Model.ViewCount</p>
+                    <p>
+                        <strong>Статус:</strong>
+                        @if (Model.IsPublished)
+                        {
+                            <span class="badge bg-success">Опубликовано</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning">Черновик</span>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('editArticleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const articleId = document.getElementById('articleId').value;
+            const title = document.getElementById('title').value;
+            const excerpt = document.getElementById('excerpt').value;
+            const content = document.getElementById('content').value;
+            const isPublished = document.getElementById('isPublished').checked;
+
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = '<div class="alert alert-info">Сохранение изменений...</div>';
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/articles/${articleId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        excerpt: excerpt,
+                        content: content,
+                        isPublished: isPublished
+                    })
+                });
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            Статья успешно обновлена!
+                        </div>
+                    `;
+
+                    setTimeout(() => {
+                        window.location.href = '/Articles/Details/' + articleId;
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            Ошибка: ${error.message || 'Не удалось обновить статью'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        Ошибка сети: ${error.message}
+                    </div>
+                `;
+            }
+        });
+    </script>
+}

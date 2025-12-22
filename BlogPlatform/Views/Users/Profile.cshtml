@@ -1,0 +1,183 @@
+﻿@* Views/Users/Profile.cshtml *@
+@model BlogPlatform.Data.DTOs.UserDTO
+@{
+    ViewData["Title"] = "Мой профиль";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                    {
+                        <img src="@Model.AvatarUrl" alt="Аватар" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    }
+                    else
+                    {
+                        <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 150px; height: 150px;">
+                            <i class="fas fa-user fa-4x text-white"></i>
+                        </div>
+                    }
+
+                    <h4>@Model.Username</h4>
+                    <p class="text-muted">@Model.Email</p>
+
+                    @if (Model.Roles != null)
+                    {
+                        <div class="mb-3">
+                            @foreach (var role in Model.Roles)
+                            {
+                                <span class="badge @GetRoleBadgeClass(role) me-1">@role</span>
+                            }
+                        </div>
+                    }
+
+                    <div class="btn-group mt-3">
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Редактировать
+                        </a>
+                        <a href="/Auth/ChangePassword" class="btn btn-outline-secondary">
+                            <i class="fas fa-key"></i> Сменить пароль
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @* Статистика *@
+            <div class="card mt-3">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar"></i> Статистика
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span>Статьи:</span>
+                            <span class="badge bg-primary rounded-pill">0</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span>Комментарии:</span>
+                            <span class="badge bg-primary rounded-pill">0</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span>На сайте с:</span>
+                            <span>@Model.CreatedAt.ToString("dd.MM.yyyy")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-info-circle"></i> Информация о пользователе
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Полное имя:</dt>
+                        <dd class="col-sm-8">@(Model.FullName ?? "Не указано")</dd>
+
+                        <dt class="col-sm-4">Email:</dt>
+                        <dd class="col-sm-8">@Model.Email</dd>
+
+                        <dt class="col-sm-4">Имя пользователя:</dt>
+                        <dd class="col-sm-8">@Model.Username</dd>
+
+                        <dt class="col-sm-4">Статус:</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success">Активен</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Заблокирован</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">О себе:</dt>
+                        <dd class="col-sm-8">@(Model.Bio ?? "Не указано")</dd>
+
+                        <dt class="col-sm-4">Дата регистрации:</dt>
+                        <dd class="col-sm-8">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
+
+                        <dt class="col-sm-4">Последнее обновление:</dt>
+                        <dd class="col-sm-8">@Model.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            @* Для администраторов - дополнительные возможности *@
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="card mt-3">
+                    <div class="card-header bg-danger text-white">
+                        <i class="fas fa-user-shield"></i> Административные функции
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a href="/Users" class="btn btn-outline-primary w-100 mb-2">
+                                    <i class="fas fa-users"></i> Управление пользователями
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="/Role" class="btn btn-outline-primary w-100 mb-2">
+                                    <i class="fas fa-user-shield"></i> Управление ролями
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="/Comments" class="btn btn-outline-primary w-100 mb-2">
+                                    <i class="fas fa-comments"></i> Модерация комментариев
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="/Tags/Create" class="btn btn-outline-primary w-100 mb-2">
+                                    <i class="fas fa-tags"></i> Управление тегами
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @* Для модераторов *@
+            @if (User.IsInRole("Moderator"))
+            {
+                <div class="card mt-3">
+                    <div class="card-header bg-warning">
+                        <i class="fas fa-user-check"></i> Функции модератора
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a href="/Comments" class="btn btn-outline-warning w-100 mb-2">
+                                    <i class="fas fa-comments"></i> Модерация комментариев
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="/Tags/Create" class="btn btn-outline-warning w-100 mb-2">
+                                    <i class="fas fa-tags"></i> Добавить тег
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    public string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            "Admin" => "bg-danger",
+            "Moderator" => "bg-warning",
+            "User" => "bg-secondary",
+            _ => "bg-info"
+        };
+    }
+}

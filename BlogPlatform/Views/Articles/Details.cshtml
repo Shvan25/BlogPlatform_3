@@ -1,0 +1,209 @@
+﻿@* Views/Articles/Details.cshtml *@
+@model BlogPlatform.Data.DTOs.ArticleDTO
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container mt-4">
+    <article>
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1>@Model.Title</h1>
+                <div class="text-muted mb-3">
+                    <i class="fas fa-user"></i> Автор: @Model.AuthorName |
+                    <i class="fas fa-calendar"></i> Опубликовано: @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm") |
+                    <i class="fas fa-eye"></i> Просмотров: @Model.ViewCount
+                </div>
+            </div>
+
+            @* Кнопки действий для зарегистрированных пользователей *@
+            @if (User.Identity.IsAuthenticated)
+            {
+                <div class="btn-group">
+                    @if (User.Identity.Name == Model.AuthorName || User.IsInRole("Admin") || User.IsInRole("Moderator"))
+                    {
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Редактировать
+                        </a>
+                    }
+
+                    @if (User.Identity.Name == Model.AuthorName || User.IsInRole("Admin"))
+                    {
+                        <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Удалить
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.CoverImageUrl))
+        {
+            <div class="text-center mb-4">
+                <img src="@Model.CoverImageUrl" alt="@Model.Title" class="img-fluid rounded" style="max-height: 400px;">
+            </div>
+        }
+
+        <div class="article-content mb-4">
+            @Html.Raw(Model.Content)
+        </div>
+
+        @* Теги *@
+        @if (Model.Tags != null && Model.Tags.Any())
+        {
+            <div class="mb-4">
+                <h5><i class="fas fa-tags"></i> Теги:</h5>
+                @foreach (var tag in Model.Tags)
+                {
+                    <a href="/Tags/Details/@tag.Id" class="badge bg-primary text-decoration-none me-1">
+                        @tag.Name
+                    </a>
+                }
+            </div>
+        }
+
+        <hr>
+
+        @* Комментарии *@
+        <div class="mt-4">
+            <h4><i class="fas fa-comments"></i> Комментарии</h4>
+
+            @if (User.Identity.IsAuthenticated)
+            {
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5>Добавить комментарий</h5>
+                        <form id="commentForm" method="post" action="/api/comments">
+                            <input type="hidden" name="ArticleId" value="@Model.Id" />
+                            <div class="mb-3">
+                                <textarea name="Content" class="form-control" rows="3" placeholder="Ваш комментарий..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Отправить
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Чтобы оставлять комментарии, пожалуйста,
+                    <a asp-controller="Auth" asp-action="Login" class="alert-link">войдите</a> или
+                    <a asp-controller="Auth" asp-action="Register" class="alert-link">зарегистрируйтесь</a>.
+                </div>
+            }
+
+            @* Список комментариев *@
+            <div id="commentsList">
+                <!-- Комментарии будут загружены через JavaScript -->
+            </div>
+        </div>
+    </article>
+</div>
+
+@section Scripts {
+    <script>
+        // Загрузка комментариев
+        async function loadComments() {
+            try {
+                const response = await fetch(`/api/comments/article/@Model.Id`);
+                if (response.ok) {
+                    const comments = await response.json();
+                    const commentsList = document.getElementById('commentsList');
+                    commentsList.innerHTML = '';
+
+                    if (comments.length === 0) {
+                        commentsList.innerHTML = '<div class="alert alert-secondary">Комментариев пока нет. Будьте первым!</div>';
+                        return;
+                    }
+
+                    comments.forEach(comment => {
+                        const commentElement = document.createElement('div');
+                        commentElement.className = 'card mb-3';
+                        commentElement.innerHTML = `
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>${comment.userName}</strong>
+                                        <small class="text-muted ms-2">${new Date(comment.createdAt).toLocaleString()}</small>
+                                    </div>
+                                    ${@User.Identity.IsAuthenticated.ToString().ToLower() && (@User.IsInRole("Admin") || @User.IsInRole("Moderator")) ?
+                                        `<div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-warning" onclick="editComment(${comment.id})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="deleteComment(${comment.id})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>` : ''}
+                                </div>
+                                <p class="mt-2 mb-0">${comment.content}</p>
+                            </div>
+                        `;
+                        commentsList.appendChild(commentElement);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки комментариев:', error);
+            }
+        }
+
+        // Отправка комментария
+        document.getElementById('commentForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const commentData = {
+                articleId: formData.get('ArticleId'),
+                content: formData.get('Content')
+            };
+
+            try {
+                const response = await fetch('/api/comments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${AuthManager.getToken()}`
+                    },
+                    body: JSON.stringify(commentData)
+                });
+
+                if (response.ok) {
+                    this.reset();
+                    loadComments();
+                    alert('Комментарий успешно добавлен!');
+                } else {
+                    alert('Ошибка при добавлении комментария');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        });
+
+        // Удаление комментария (для админов и модераторов)
+        async function deleteComment(commentId) {
+            if (!confirm('Вы уверены, что хотите удалить этот комментарий?')) return;
+
+            try {
+                const response = await fetch(`/api/comments/${commentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${AuthManager.getToken()}`
+                    }
+                });
+
+                if (response.ok) {
+                    loadComments();
+                    alert('Комментарий удален');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        }
+
+        // Загружаем комментарии при загрузке страницы
+        document.addEventListener('DOMContentLoaded', loadComments);
+    </script>
+}

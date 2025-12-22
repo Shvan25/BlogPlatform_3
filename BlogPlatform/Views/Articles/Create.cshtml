@@ -1,0 +1,124 @@
+﻿@model List<BlogPlatform.Data.DTOs.TagDTO>
+@{
+    ViewData["Title"] = "Добавление статьи";
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Новая статья</h4>
+                </div>
+                <div class="card-body">
+                    <form id="createArticleForm">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Заголовок *</label>
+                            <input type="text" class="form-control" id="title" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="excerpt" class="form-label">Краткое содержание</label>
+                            <textarea class="form-control" id="excerpt" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Содержание *</label>
+                            <textarea class="form-control" id="content" rows="10" required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Теги</label>
+                            <div class="row">
+                                @foreach (var tag in Model)
+                                {
+                                    <div class="col-md-3 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   value="@tag.Id" id="tag-@tag.Id">
+                                            <label class="form-check-label" for="tag-@tag.Id">
+                                                @tag.Name
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Опубликовать статью
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="message" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('createArticleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const title = document.getElementById('title').value;
+            const excerpt = document.getElementById('excerpt').value;
+            const content = document.getElementById('content').value;
+
+            const selectedTags = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(cb => parseInt(cb.value));
+
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = '<div class="alert alert-info">Создание статьи...</div>';
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/articles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        excerpt: excerpt,
+                        content: content,
+                        authorId: user.id || 1,
+                        tagIds: selectedTags
+                    })
+                });
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            Статья успешно создана!
+                        </div>
+                    `;
+
+                    setTimeout(() => {
+                        window.location.href = '/Articles';
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            Ошибка: ${error.message}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        Ошибка сети: ${error.message}
+                    </div>
+                `;
+            }
+        });
+    </script>
+}

@@ -1,0 +1,177 @@
+﻿@model BlogPlatform.Data.DTOs.TagDTO
+@{
+    ViewData["Title"] = "Тег: " + Model.Name;
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <span class="badge bg-primary fs-5">@Model.Name</span>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.Description))
+                    {
+                        <h5>Описание:</h5>
+                        <p class="lead">@Model.Description</p>
+                    }
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <p><strong>ID:</strong> @Model.Id</p>
+                            <p><strong>Название:</strong> @Model.Name</p>
+                            <p><strong>Slug:</strong> @Model.Slug</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Создан:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                            <p>
+                                <strong>Статей с этим тегом:</strong>
+                                <span id="articlesCount" class="badge bg-info">Загрузка...</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="/Tags" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> К списку тегов
+                        </a>
+
+                        @if (User.IsInRole("Admin") || User.IsInRole("Moderator"))
+                        {
+                            <a href="/Tags/Edit/@Model.Id" class="btn btn-warning">
+                                <i class="bi bi-pencil"></i> Редактировать
+                            </a>
+                        }
+
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <a href="/Tags/Delete/@Model.Id" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Удалить
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Список статей с этим тегом -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Статьи с тегом "@Model.Name"</h5>
+                </div>
+                <div class="card-body">
+                    <div id="articlesList">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Загрузка...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Действия</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="findArticlesWithTag(@Model.Id)">
+                            <i class="bi bi-search"></i> Найти статьи
+                        </button>
+                        <button class="btn btn-outline-info" onclick="copyTagInfo()">
+                            <i class="bi bi-clipboard"></i> Скопировать информацию
+                        </button>
+                        @if (User.IsInRole("Admin") || User.IsInRole("Moderator"))
+                        {
+                            <button class="btn btn-outline-warning" onclick="editTag(@Model.Id)">
+                                <i class="bi bi-pencil"></i> Быстрое редактирование
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Информация</h5>
+                </div>
+                <div class="card-body">
+                    <p>Теги помогают организовать контент по темам и облегчают поиск.</p>
+                    <p class="text-muted small">Всего тегов в системе: <span id="totalTagsCount">...</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Загрузка статистики
+        async function loadTagStatistics() {
+            try {
+                // Загрузка количества статей с этим тегом
+                const response = await fetch(`/api/tags/${@Model.Id}/articles`);
+                if (response.ok) {
+                    const articles = await response.json();
+                    document.getElementById('articlesCount').textContent = articles.length;
+
+                    // Отображение списка статей
+                    if (articles.length > 0) {
+                        let html = '<div class="list-group">';
+                        articles.forEach(article => {
+                            html += `
+                                <a href="/Articles/Details/${article.id}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">${article.title}</h6>
+                                        <small>${new Date(article.createdAt).toLocaleDateString()}</small>
+                                    </div>
+                                    <p class="mb-1 small">${article.excerpt || 'Нет описания'}</p>
+                                </a>
+                            `;
+                        });
+                        html += '</div>';
+                        document.getElementById('articlesList').innerHTML = html;
+                    } else {
+                        document.getElementById('articlesList').innerHTML =
+                            '<p class="text-muted">Нет статей с этим тегом</p>';
+                    }
+                }
+
+                // Загрузка общего количества тегов
+                const tagsResponse = await fetch('/api/tags');
+                if (tagsResponse.ok) {
+                    const allTags = await tagsResponse.json();
+                    document.getElementById('totalTagsCount').textContent = allTags.length;
+                }
+            } catch (error) {
+                console.error('Error loading tag statistics:', error);
+                document.getElementById('articlesList').innerHTML =
+                    '<div class="alert alert-danger">Ошибка загрузки данных</div>';
+            }
+        }
+
+        function findArticlesWithTag(tagId) {
+            window.location.href = `/Articles?tagId=${tagId}`;
+        }
+
+        function copyTagInfo() {
+            const tagInfo = `Тег: ${'@Model.Name'}\nОписание: ${'@Model.Description'}\nID: ${'@Model.Id'}`;
+            navigator.clipboard.writeText(tagInfo)
+                .then(() => alert('Информация о теге скопирована в буфер обмена'))
+                .catch(err => console.error('Ошибка копирования:', err));
+        }
+
+        function editTag(tagId) {
+            window.location.href = `/Tags/Edit/${tagId}`;
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', loadTagStatistics);
+    </script>
+}

@@ -1,0 +1,118 @@
+﻿@{
+    ViewData["Title"] = "Вход";
+    Layout = "_Layout";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="text-center mb-0"><i class="bi bi-box-arrow-in-right"></i> Вход в систему</h3>
+                </div>
+                <div class="card-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Имя пользователя</label>
+                            <input type="text" class="form-control" id="username" required
+                                   value="admin" placeholder="Введите имя пользователя">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Пароль</label>
+                            <input type="password" class="form-control" id="password" required
+                                   value="admin123" placeholder="Введите пароль">
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-box-arrow-in-right"></i> Войти
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="loginMessage" class="mt-3"></div>
+
+                    <div class="mt-3 text-center">
+                        <p>Нет аккаунта? <a href="/Auth/Register" class="text-decoration-none">Зарегистрируйтесь</a></p>
+                        <p class="text-muted small">
+                            Тестовые учетные записи:<br>
+                            admin / admin123 (Администратор)<br>
+                            moderator / moderator123 (Модератор)<br>
+                            user / user123 (Пользователь)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const messageDiv = document.getElementById('loginMessage');
+            messageDiv.innerHTML = '<div class="alert alert-info">Выполняется вход...</div>';
+
+            try {
+                const response = await fetch('/api/AuthApi/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Сохраняем токен и данные пользователя
+                    if (AuthManager.saveToken(data.token)) {
+                        // Сохраняем данные пользователя
+                        localStorage.setItem('user', JSON.stringify(data.user));
+
+                        messageDiv.innerHTML = `
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i> Вход выполнен успешно!
+                                <p class="mb-0">Добро пожаловать, ${data.user.username}!</p>
+                                <p class="mb-0">Роли: ${data.roles.join(', ')}</p>
+                            </div>
+                        `;
+
+                        // Обновляем навигацию
+                        updateNavigation();
+
+                        // Перенаправляем через 2 секунды
+                        setTimeout(() => {
+                            const returnUrl = new URLSearchParams(window.location.search).get('returnUrl') || '/';
+                            window.location.href = returnUrl;
+                        }, 2000);
+                    }
+                } else {
+                    const error = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            ${error.message || 'Ошибка авторизации'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Ошибка сети: ${error.message}
+                    </div>
+                `;
+            }
+        });
+    </script>
+}

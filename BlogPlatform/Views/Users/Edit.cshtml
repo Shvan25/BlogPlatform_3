@@ -1,0 +1,203 @@
+﻿@model BlogPlatform.Data.DTOs.UserDTO
+@{
+    ViewData["Title"] = "Редактирование пользователя";
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0"><i class="bi bi-pencil"></i> Редактирование пользователя</h4>
+                </div>
+                <div class="card-body">
+                    <form id="editUserForm">
+                        <input type="hidden" id="userId" value="@Model.Id">
+
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Имя пользователя *</label>
+                            <input type="text" class="form-control" id="username"
+                                   value="@Model.Username" required readonly>
+                            <div class="form-text">Имя пользователя нельзя изменить</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email"
+                                   value="@Model.Email" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label">Полное имя</label>
+                            <input type="text" class="form-control" id="fullName"
+                                   value="@Model.FullName">
+                        </div>
+
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Роли</label>
+                                <div id="rolesContainer">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Загрузка...</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="isActive"
+                                       @(Model.IsActive ? "checked" : "")>
+                                <label class="form-check-label" for="isActive">
+                                    Активен
+                                </label>
+                            </div>
+                        }
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-check-circle"></i> Сохранить изменения
+                            </button>
+                            <a href="/Users/Details/@Model.Id" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+
+                    <div id="message" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Информация</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID:</strong> @Model.Id</p>
+                    <p>
+                        <strong>Текущие роли:</strong>
+                        @foreach (var role in Model.Roles)
+                        {
+                            <span class="badge bg-primary me-1">@role</span>
+                        }
+                    </p>
+                    <p>
+                        <strong>Статус:</strong>
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge bg-success">Активен</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Неактивен</span>
+                        }
+                    </p>
+                    <p><strong>Зарегистрирован:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                    <p><strong>Обновлен:</strong> @Model.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Загружаем все роли для выбора
+        async function loadRoles() {
+            try {
+                const response = await fetch('/api/role');
+                if (response.ok) {
+                    const allRoles = await response.json();
+                    const userRoles = @Html.Raw(Json.Serialize(Model.Roles));
+
+                    let html = '';
+                    allRoles.forEach(role => {
+                        const isChecked = userRoles.includes(role.name);
+                        html += `
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox"
+                                       value="${role.id}" id="role-${role.id}"
+                                       ${isChecked ? 'checked' : ''}>
+                                <label class="form-check-label" for="role-${role.id}">
+                                    ${role.name}
+                                </label>
+                            </div>
+                        `;
+                    });
+
+                    document.getElementById('rolesContainer').innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error loading roles:', error);
+                document.getElementById('rolesContainer').innerHTML =
+                    '<div class="alert alert-danger">Не удалось загрузить роли</div>';
+            }
+        }
+
+        // Сохранение изменений
+        document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const userId = document.getElementById('userId').value;
+            const email = document.getElementById('email').value;
+            const fullName = document.getElementById('fullName').value;
+            const isActive = document.getElementById('isActive')?.checked ?? true;
+
+            // Собираем выбранные роли
+            const selectedRoles = Array.from(document.querySelectorAll('#rolesContainer input[type="checkbox"]:checked'))
+                .map(cb => parseInt(cb.value));
+
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = '<div class="alert alert-info">Сохранение изменений...</div>';
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        fullName: fullName,
+                        isActive: isActive,
+                        roleIds: selectedRoles
+                    })
+                });
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            Пользователь успешно обновлен!
+                        </div>
+                    `;
+
+                    setTimeout(() => {
+                        window.location.href = '/Users/Details/' + userId;
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    messageDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            Ошибка: ${error.message || 'Не удалось обновить пользователя'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        Ошибка сети: ${error.message}
+                    </div>
+                `;
+            }
+        });
+
+        // Инициализация
+        if (@User.IsInRole("Admin").ToString().ToLower()) {
+            loadRoles();
+        }
+    </script>
+}

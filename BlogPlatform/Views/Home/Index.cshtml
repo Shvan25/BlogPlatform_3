@@ -1,0 +1,212 @@
+﻿@{
+    ViewData["Title"] = "Главная страница";
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <div class="text-center mb-5">
+        <h1 class="display-4">Добро пожаловать в блог</h1>
+        <p class="lead">Платформа для создания и управления контентом</p>
+    </div>
+
+    <div class="row">
+        <!-- Панель быстрого доступа -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Быстрый доступ</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="/Articles" class="list-group-item list-group-item-action">
+                            <i class="bi bi-newspaper"></i> Статьи
+                        </a>
+                        <a href="/Tags" class="list-group-item list-group-item-action">
+                            <i class="bi bi-tags"></i> Теги
+                        </a>
+                        <a href="/Users" class="list-group-item list-group-item-action">
+                            <i class="bi bi-people"></i> Пользователи
+                        </a>
+                        <a href="/Role" class="list-group-item list-group-item-action">
+                            <i class="bi bi-shield-check"></i> Роли
+                        </a>
+                        <a href="/Comments" class="list-group-item list-group-item-action">
+                            <i class="bi bi-chat-text"></i> Комментарии
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Панель управления для админов/модераторов -->
+            <div id="adminPanel" class="card mt-3" style="display: none;">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> Управление</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="/Tags/Create" class="list-group-item list-group-item-action">
+                            <i class="bi bi-plus-circle"></i> Добавить тег
+                        </a>
+                        <a href="/Articles/Create" class="list-group-item list-group-item-action">
+                            <i class="bi bi-plus-circle"></i> Добавить статью
+                        </a>
+                        <a href="/Users" class="list-group-item list-group-item-action">
+                            <i class="bi bi-person-plus"></i> Управление пользователями
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основной контент -->
+        <div class="col-md-9">
+            <!-- Популярные теги -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-tags"></i> Популярные теги</h5>
+                </div>
+                <div class="card-body">
+                    <div id="popularTags">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Загрузка тегов...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="/Tags" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-arrow-right"></i> Все теги
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h2 id="articlesCount">0</h2>
+                            <p class="text-muted">Статей</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h2 id="tagsCount">0</h2>
+                            <p class="text-muted">Тегов</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h2 id="usersCount">0</h2>
+                            <p class="text-muted">Пользователей</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Функция для проверки прав и показа/скрытия панели админа
+        function checkUserPermissions() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (token && user.roles) {
+                console.log('Текущий пользователь:', user.username);
+                console.log('Роли:', user.roles);
+                console.log('Токен:', token.substring(0, 20) + '...');
+
+                // Сохраняем токен в глобальной переменной для отладки
+                window.currentToken = token;
+                window.currentUser = user;
+
+                // Проверяем, является ли пользователь админом или модератором
+                if (user.roles.includes('Admin') || user.roles.includes('Moderator')) {
+                    document.getElementById('adminPanel').style.display = 'block';
+                    console.log('Показана панель управления');
+                }
+            }
+        }
+
+        // Загрузка статистики
+        async function loadStatistics() {
+            try {
+                // Загрузка количества статей
+                const articlesResponse = await fetch('/api/articles');
+                if (articlesResponse.ok) {
+                    const articles = await articlesResponse.json();
+                    document.getElementById('articlesCount').textContent = articles.length;
+                }
+
+                // Загрузка количества тегов
+                const tagsResponse = await fetch('/api/tags');
+                if (tagsResponse.ok) {
+                    const tags = await tagsResponse.json();
+                    document.getElementById('tagsCount').textContent = tags.length;
+
+                    // Отображение популярных тегов
+                    let html = '';
+                    tags.slice(0, 10).forEach(tag => {
+                        html += `
+                            <a href="/Tags/Details/${tag.id}" class="badge bg-primary text-decoration-none me-2 mb-2">
+                                ${tag.name}
+                            </a>
+                        `;
+                    });
+                    document.getElementById('popularTags').innerHTML = html;
+                }
+
+                // Загрузка количества пользователей
+                const usersResponse = await fetch('/api/users');
+                if (usersResponse.ok) {
+                    const users = await usersResponse.json();
+                    document.getElementById('usersCount').textContent = users.length;
+                }
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        // Функция для проверки токена (можно вызвать из консоли браузера)
+        window.checkToken = function() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('Токен не найден');
+                return;
+            }
+
+            // Декодируем токен для просмотра содержимого
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                console.log('Данные в токене:');
+                console.log('Пользователь:', payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"]);
+                console.log('Роли:', payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]);
+                console.log('ID:', payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"]);
+                console.log('Истекает:', new Date(payload.exp * 1000).toLocaleString());
+            } catch (e) {
+                console.log('Не удалось декодировать токен:', e);
+            }
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            checkUserPermissions();
+            loadStatistics();
+
+            // Для отладки: выводим информацию о токене в консоль
+            const token = localStorage.getItem('token');
+            if (token) {
+                console.log('Токен присутствует в localStorage');
+                window.checkToken();
+            }
+        });
+    </script>
+}

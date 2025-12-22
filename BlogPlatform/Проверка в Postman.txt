@@ -1,0 +1,18 @@
+Проверка работы программы проводилась в Postman.
+Пример запроса получения всех пользователей.
+Сначала получим токен:
+POST https://localhost:44390/api/auth/login
+{
+  "username": "Аdmin",
+  "password": "admin1234"
+}
+получаем токен:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJhZG1pbkBibG9nLmNvbSIsImZ1bGxuYW1lIjoi0JDQtNC80LjQvdC40YHRgtGA0LDRgtC-0YAg0KHQuNGB0YLQtdC80YsiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc2NTcxOTY4MCwiaXNzIjoiQmxvZ1BsYXRmb3JtIiwiYXVkIjoiQmxvZ1BsYXRmb3JtVXNlcnMifQ.sG74vB6OZNzD4kKElcB4t9-dO-GN7UhrG10IkgVF_wE
+Вводим запрос на пользователей:
+GET https://localhost:44390/api/users
+На вкладке Headers:
+Key              | Value
+-----------------|-----------------------------
+Authorization    | Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJhZG1pbkBibG9nLmNvbSIsImZ1bGxuYW1lIjoi0JDQtNC80LjQvdC40YHRgtGA0LDRgtC-0YAg0KHQuNGB0YLQtdC80YsiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc2NTcxOTY4MCwiaXNzIjoiQmxvZ1BsYXRmb3JtIiwiYXVkIjoiQmxvZ1BsYXRmb3JtVXNlcnMifQ.sG74vB6OZNzD4kKElcB4t9-dO-GN7UhrG10IkgVF_wE
+
+Отправляем запрос, получаем всех пользователей

@@ -1,0 +1,66 @@
+﻿@* Views/Error/AccessDenied.cshtml *@
+@{
+    ViewData["Title"] = "Доступ запрещен";
+    Layout = "_Layout";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="error-template">
+                <h1 class="display-1 text-danger">
+                    <i class="fas fa-ban"></i> 403
+                </h1>
+                <h2 class="display-4">Доступ запрещен</h2>
+                <div class="error-details mt-4">
+                    <p class="lead">
+                        К сожалению, у вас недостаточно прав для доступа к этой странице.
+                    </p>
+                    <p>
+                        Возможно, вам нужно войти под другой учетной записью или обратиться к администратору.
+                    </p>
+                </div>
+                <div class="error-actions mt-5">
+                    <a href="/" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-home"></i> На главную
+                    </a>
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <a href="/Auth/Logout" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-sign-out-alt"></i> Выйти
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="/Auth/Login" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-sign-in-alt"></i> Войти
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .error-template {
+        padding: 40px 15px;
+    }
+
+    .display-1 {
+        font-size: 8rem;
+        font-weight: 300;
+        line-height: 1.2;
+    }
+
+    .display-4 {
+        font-size: 3.5rem;
+        font-weight: 300;
+        line-height: 1.2;
+    }
+
+    .lead {
+        font-size: 1.25rem;
+        font-weight: 300;
+    }
+</style>
