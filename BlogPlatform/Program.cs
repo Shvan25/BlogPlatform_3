@@ -1,3 +1,4 @@
+using BlogPlatform.Controllers;
 using BlogPlatform.Data.Data;
 using BlogPlatform.Data.Interfaces;
 using BlogPlatform.Data.Services;
@@ -14,8 +15,6 @@ using System.Text;
 // Создать логгер
 var logger = NLog.LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
 
-try
-{
     logger.Info("Запуск приложения BlogPlatform");
 
     var builder = WebApplication.CreateBuilder(args);
@@ -23,9 +22,6 @@ try
     // Добавить NLog
     builder.Logging.ClearProviders();
     builder.Host.UseNLog();
-
-    // Добавить сервис логирования действий пользователя
-    builder.Services.AddScoped<UserActivityLogger>();
 
     // 1. Добавляем оба типа контроллеров
     builder.Services.AddControllersWithViews(); // Для MVC контроллеров
@@ -40,8 +36,12 @@ try
     builder.Services.AddScoped<IArticleService, ArticleService>();
     builder.Services.AddScoped<ICommentService, CommentService>();
 
-    // И JWT аутентификация:
-    var jwtKey = builder.Configuration["Jwt:Key"] ?? "super_secret_1234567890!@#$%^&*()";
+// Добавить сервис логирования действий пользователя
+builder.Services.AddScoped<BlogPlatform.Controllers.UserActivityLogger>();
+
+
+// И JWT аутентификация:
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "super_secret_1234567890!@#$%^&*()";
     builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -130,8 +130,7 @@ try
         .WithGroupName("MVC");
 
     // 6. Инициализация базы данных
-    try
-    {
+    
         using var scope = app.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -188,12 +187,6 @@ try
 
             Console.WriteLine("Test user created: admin / admin123 (with Admin role)");
         }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Database error: {ex.Message}");
-        Console.WriteLine($"Stack trace: {ex.StackTrace}");
-    }
 
     // Тестовые маршруты для проверки
     app.MapGet("/api/test", () => "API test endpoint works!");
@@ -214,14 +207,3 @@ try
     Console.WriteLine($"Web Root: {app.Environment.WebRootPath}");
 
     app.Run();
-}
-
-catch (Exception ex)
-{
-    logger.Error(ex, "Ошибка при запуске приложения");
-    throw;
-}
-finally
-{
-    NLog.LogManager.Shutdown();
-}

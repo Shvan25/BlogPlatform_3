@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
-namespace BlogPlatform.Services
+namespace BlogPlatform.Controllers
 {
     public class UserActivityLogger
     {
